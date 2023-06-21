@@ -25,7 +25,7 @@ def merge_results(input_dir="../output", output_dir="../general_output"):
 
         combined_df.to_csv(os.path.join(output_dir, "overview_output.csv"), index=False)
     else:
-        print("Error.")
+        print("Error in merge results.")
 
 
 def find_python_files(url):
@@ -175,7 +175,7 @@ def main(args):
         if not os.path.exists(f"{args.output}"):
             os.makedirs(f"{args.output}")
         analyze_project(args.input, args.output)
-    merge_results(args.output, args.output+"/overview")
+    #merge_results(args.output, args.output+"/overview")
 
 
 
