@@ -2,5 +2,7 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/pytorch-widedeepinternal_commit___2fe4b49afd1b0a0565eee1479dcc1acd0c0d3a14___between_commitsa71699d6cdf820c73f053e2d86b0fc214e9847bf___2fe4b49afd1b0a0565eee1479dcc1acd0c0d3a14" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/sonnetinternal_commit___f8552f4b403b35581ef5eb64fa50def4772c7d2e___between_commits940b4d1117160668f10933a3d17a492a49a517ac___f0ac4cb408118845df71ff0feca19964cc9223d5" vcs="Git" />
   </component>
 </project>
