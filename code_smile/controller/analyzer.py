@@ -5,7 +5,7 @@ import time
 from code_smile.components import detector
 import argparse
 
-def merge_results(input_dir="../output", output_dir="../general_output"):
+def merge_results(input_dir="..\\output", output_dir="..\\general_output"):
     dataframes = []
     for subdir, dirs, files in os.walk(input_dir):
         if "to_save.csv" in files:
@@ -68,7 +68,7 @@ def analyze_project(project_path, output_path="."):
     filenames = get_python_files(project_path)
 
     for filename in filenames:
-        if "tests/" not in filename:  # ignore test files
+        if "tests\\" not in filename:  # ignore test files
             try:
                 result = detector.inspect(filename, output_path)
                 to_save = to_save.merge(result, how='outer')
@@ -89,24 +89,24 @@ def analyze_project(project_path, output_path="."):
                     error_file.write(str(message))
                 continue
 
-    to_save.to_csv(output_path + "/to_save.csv", index=False, mode='a')
+    to_save.to_csv(output_path + "\\to_save.csv", index=False, mode='a')
 
 
-def projects_analysis(base_path='../input/projects', output_path='../output/projects_analysis',resume=False):
+def projects_analysis(base_path='..\\input/projects', output_path='..\\output/projects_analysis',resume=False):
     start = time.time()
     if not os.path.exists(output_path):
         os.makedirs(output_path)
     dirpath = os.listdir(base_path)
-    if not os.path.exists("../config/execution_log.txt"):
+    if not os.path.exists("..\\config\\execution_log.txt"):
         #get abs path of execution_log.txt
-        execution_log_path = os.path.abspath("../config/execution_log.txt")
+        execution_log_path = os.path.abspath("..\\config/execution_log.txt")
         print("Path:"+execution_log_path)
-        open("../config/execution_log.txt", "w").close()
+        open("..\\config/execution_log.txt", "w").close()
         resume = False
-    execution_log = open("../config/execution_log.txt", "a")
+    execution_log = open("..\\config/execution_log.txt", "a")
     #get last project analyzed in execution_log.txt
     if resume:
-        with open("../config/execution_log.txt", "r") as f:
+        with open("..\\config/execution_log.txt", "r") as f:
             last_project = f.readlines()[-1]
     for dirname in dirpath:
         if resume:
@@ -124,7 +124,7 @@ def projects_analysis(base_path='../input/projects', output_path='../output/proj
     print(f"Sequential Exec Time completed in: {end - start}")
 
 
-def parallel_projects_analysis(base_path='../input/projects', output_path='../output/projects_analysis', max_workers=5,resume=False):
+def parallel_projects_analysis(base_path='..\\input/projects', output_path='..\\output/projects_analysis', max_workers=5,resume=False):
     start = time.time()
     if not os.path.exists(output_path):
         os.makedirs(output_path)
@@ -139,7 +139,7 @@ def parallel_projects_analysis(base_path='../input/projects', output_path='../ou
     print(f"Parallel Exec Time completed in: {end - start}")
 
 
-def clean(output_path="../output/projects_analysis"):
+def clean(output_path="..\\output\\projects_analysis"):
     # check os windows or linux
 
     if os.name == "nt":
@@ -185,8 +185,8 @@ if __name__ == "__main__":
     parser.add_argument("--input", type=str, help="Path to the input folder")
     parser.add_argument("--output", type=str, help="Path to the output folder")
     parser.add_argument("--max_workers", type=int, default=5,help="Number of workers for parallel execution")
-    parser.add_argument("--parallel",default=False, type=bool, help="Enable parallel execution")
-    parser.add_argument("--resume", default=False, type=bool, help="Continue previous execution")
+    parser.add_argument("--parallel",default=True, type=bool, help="Enable parallel execution")
+    parser.add_argument("--resume", default=True, type=bool, help="Continue previous execution")
     parser.add_argument("--multiple", default=False, type=bool, help="Enable multiple projects analysis")
     args = parser.parse_args()
     main(args)

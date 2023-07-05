@@ -4,6 +4,7 @@ import subprocess
 import pandas as pd
 import git
 from pydriller import Repository
+import logging
 
 
 def get_all_directory_projects(project_path):
@@ -55,8 +56,8 @@ def run_code_smile(project, output_path):
     if not os.path.exists(output_path):
         os.makedirs(output_path)
     output_path = os.path.abspath(output_path) + "/"
-    project = project + "/"
-    command = ["python", "/Users/broke31/PycharmProjects/wrapper_code_smile/code_smile/controller/analyzer.py",
+    project = project + "\\"
+    command = ["python", "C:\\Users\\pc\\Desktop\\wrapper_code_smile\\code_smile\\controller\\analyzer.py",
                "--input", project, "--output", output_path]
     subprocess.run(command)
     print("Code_smile executed successfully")
@@ -68,9 +69,9 @@ def analyze_commit_by_commit(path_with_releases, commit_i, commit_j, project, ba
     commit_j_without_proj_name = get_hash_from_project_name(commit_j)
     commits = get_list_of_commits_between_two_releases(base_dir + project, commit_i_without_proj_name,
                                                        commit_j_without_proj_name)
-    project += "/"
+    project += "\\"
     for commit in commits:
-        commit_path = path_without_release + "/internal_commits/" + "between_commits___from" + commit_i_without_proj_name + "___to" + commit_j_without_proj_name + "/" + commit.hash + "/"
+        commit_path = path_without_release + "\\internal_commits\\" + "between_commits___from" + commit_i_without_proj_name + "___to" + commit_j_without_proj_name + "\\" + commit.hash + "\\"
         if not os.path.exists(commit_path):
             os.makedirs(commit_path)
             checkout_to_commit(base_dir + project, commit)
@@ -78,23 +79,22 @@ def analyze_commit_by_commit(path_with_releases, commit_i, commit_j, project, ba
 
 
 def reorganize_output_code_smile(code_smile_dir_out):
+    if not os.path.exists(code_smile_dir_out + "\\releases\\"):
+        os.makedirs(code_smile_dir_out + "\\releases\\")
+
     list_directory = get_all_directory_projects(code_smile_dir_out)
-    for project in list_directory:
-        sub_dirs = get_all_directory_projects(code_smile_dir_out + "/" + project)
-        if not os.path.exists(code_smile_dir_out + "/" + project + "/releases/"):
-            os.makedirs(code_smile_dir_out + "/" + project + "/releases/")
-        for sub_dir in sub_dirs:
-            os.rename(code_smile_dir_out + "/" + project + "/" + sub_dir,
-                      code_smile_dir_out + "/" + project + "/releases/" + sub_dir)
+    list_directory.remove("releases")
+    for sub_project in list_directory:
+        os.rename(code_smile_dir_out+"\\"+sub_project,code_smile_dir_out+"\\releases\\"+sub_project)
 
 
 def get_project_name(project):
-    return project.split("/")[-2]
+    return project.split("\\")[-2]
 
 
 def check_and_save_differences(input_directory, project):
     project_name = get_project_name(project)
-    differences_directory = "differences/" + project_name + "/"
+    differences_directory = "differences\\" + project_name + "\\"
     if not os.path.exists(differences_directory):
         os.makedirs(differences_directory)
     if not os.path.exists(project):
@@ -143,7 +143,7 @@ def estimate_smelliness_between_two_stable_versions(df1, df2):
             return "different_smells_but_same_smelliness"
 
 
-def start_analysis(project_path, dir):
+def start_analysis(project_path, dir,output_dir):
     print("*******************Starting analysis of project " + dir + "*******************")
     output_dir_code_smile = "code_smile/output/projects_analysis/" + dir + "/"
     output_dir_code_smile = os.path.abspath(output_dir_code_smile) + "/"
@@ -161,10 +161,8 @@ def start_analysis(project_path, dir):
             os.rename(project_path + "___" + release.hash, project_path)
 
     # check_and_save_differences(project_path, output_dir_code_smile)
-    reorganize_output_code_smile(
-        "/Users/broke31/PycharmProjects/wrapper_code_smile/code_smile/output/projects_analysis")
-    verify_differencies(
-        "/Users/broke31/PycharmProjects/wrapper_code_smile/code_smile/output/projects_analysis", base_dir)
+    reorganize_output_code_smile(output_dir+"\\"+dir)
+    verify_differencies(output_dir, base_dir)
 
     print("*******************Analysis of project " + dir + " finished*******************")
 
@@ -172,22 +170,30 @@ def start_analysis(project_path, dir):
 def verify_differencies(input_projects_analysis, base_dir):
     projects = get_all_directory_projects(input_projects_analysis)
     for i in range(len(projects)):
-        list_releases = get_all_directory_projects(input_projects_analysis + "/" + projects[i] + "/releases")
+        list_releases = get_all_directory_projects(input_projects_analysis + "\\" + projects[i] + "\\releases")
         for j in range(len(list_releases) - 1):
             df_i = pd.read_csv(
-                input_projects_analysis + "/" + projects[i] + "/releases/" + list_releases[j] + "/to_save.csv")
+                input_projects_analysis + "\\" + projects[i] + "\\releases\\" + list_releases[j] + "\\to_save.csv")
             df_j = pd.read_csv(
-                input_projects_analysis + "/" + projects[i] + "/releases/" + list_releases[j + 1] + "/to_save.csv")
+                input_projects_analysis + "\\" + projects[i] + "\\releases\\" + list_releases[j + 1] + "\\to_save.csv")
             if estimate_smelliness_between_two_stable_versions(df_i, df_j) != "stable":
                 print("Project: " + projects[i] + " Release: " + list_releases[j] + " and " + list_releases[
                     j + 1] + " are different")
-                analyze_commit_by_commit(input_projects_analysis + "/" + projects[i] + "/releases", list_releases[j],
-                                         list_releases[j + 1], projects[i], base_dir)
+                analyze_commit_by_commit(input_projects_analysis + "\\" + projects[i] + "\\releases", list_releases[j], list_releases[j + 1], projects[i], base_dir)
 
 
 if __name__ == '__main__':
-    base_dir = "/Users/broke31/Desktop/test_dovidify/"
+    base_dir = "D:\\ai_code_smells\\machine_learning_projects\\a_test\\"
+    output_dir ="C:\\Users\\pc\\Desktop\\wrapper_code_smile\\code_smile\\output\\projects_analysis"
     list_dir = get_all_directory_projects(base_dir)
     print(list_dir)
     for dir in list_dir:
-        start_analysis(base_dir + dir, dir)
+        try:
+            start_analysis(base_dir + dir, dir,output_dir)
+        except:
+            logging.basicConfig(filename='log/log.txt', level=logging.DEBUG,
+                            format='%(asctime)s %(levelname)s %(message)s')
+            logging.error("project: " + dir + "skipped")
+
+
+
