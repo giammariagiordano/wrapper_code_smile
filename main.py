@@ -59,7 +59,8 @@ def run_code_smile(project, output_path):
     project = project + "\\"
     command = ["python", "C:\\Users\\pc\\Desktop\\wrapper_code_smile\\code_smile\\controller\\analyzer.py",
                "--input", project, "--output", output_path]
-    subprocess.run(command)
+    p = subprocess.run(command)
+    p.check_returncode()
     print("Code_smile executed successfully")
 
 
@@ -143,10 +144,10 @@ def estimate_smelliness_between_two_stable_versions(df1, df2):
             return "different_smells_but_same_smelliness"
 
 
-def start_analysis(project_path, dir,output_dir):
+def start_analysis(project_path, dir,output_dir,base_dir):
     print("*******************Starting analysis of project " + dir + "*******************")
     output_dir_code_smile = "code_smile/output/projects_analysis/" + dir + "/"
-    output_dir_code_smile = os.path.abspath(output_dir_code_smile) + "/"
+    output_dir_code_smile = os.path.abspath(output_dir_code_smile) + "\\"
     list_of_releases = get_list_of_releases(project_path)
     for release in list_of_releases:
         project_path_and_hash = project_path + "___" + release.hash
@@ -162,7 +163,7 @@ def start_analysis(project_path, dir,output_dir):
 
     # check_and_save_differences(project_path, output_dir_code_smile)
     reorganize_output_code_smile(output_dir+"\\"+dir)
-    verify_differencies(output_dir, base_dir)
+    verify_project(output_dir,dir,base_dir)
 
     print("*******************Analysis of project " + dir + " finished*******************")
 
@@ -170,16 +171,20 @@ def start_analysis(project_path, dir,output_dir):
 def verify_differencies(input_projects_analysis, base_dir):
     projects = get_all_directory_projects(input_projects_analysis)
     for i in range(len(projects)):
-        list_releases = get_all_directory_projects(input_projects_analysis + "\\" + projects[i] + "\\releases")
-        for j in range(len(list_releases) - 1):
-            df_i = pd.read_csv(
-                input_projects_analysis + "\\" + projects[i] + "\\releases\\" + list_releases[j] + "\\to_save.csv")
-            df_j = pd.read_csv(
-                input_projects_analysis + "\\" + projects[i] + "\\releases\\" + list_releases[j + 1] + "\\to_save.csv")
-            if estimate_smelliness_between_two_stable_versions(df_i, df_j) != "stable":
-                print("Project: " + projects[i] + " Release: " + list_releases[j] + " and " + list_releases[
-                    j + 1] + " are different")
-                analyze_commit_by_commit(input_projects_analysis + "\\" + projects[i] + "\\releases", list_releases[j], list_releases[j + 1], projects[i], base_dir)
+        verify_project(input_projects_analysis, projects[i],base_dir)
+
+def verify_project(input_projects_analysis, project_name,base_dir):
+    list_releases = get_all_directory_projects(input_projects_analysis + "\\" + project_name + "\\releases")
+    for j in range(len(list_releases) - 1):
+        df_i = pd.read_csv(
+            input_projects_analysis + "\\" + project_name + "\\releases\\" + list_releases[j] + "\\to_save.csv")
+        df_j = pd.read_csv(
+            input_projects_analysis + "\\" + project_name + "\\releases\\" + list_releases[j + 1] + "\\to_save.csv")
+        if estimate_smelliness_between_two_stable_versions(df_i, df_j) != "stable":
+            print("Project: " + project_name + " Release: " + list_releases[j] + " and " + list_releases[
+                j + 1] + " are different")
+            analyze_commit_by_commit(input_projects_analysis + "\\" + project_name + "\\releases", list_releases[j],
+                                     list_releases[j + 1], project_name, base_dir)
 
 
 if __name__ == '__main__':
