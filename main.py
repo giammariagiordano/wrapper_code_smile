@@ -170,9 +170,17 @@ def start_analysis(project_path, dir,output_dir,base_dir):
 
 def verify_differencies(input_projects_analysis, base_dir):
     projects = get_all_directory_projects(input_projects_analysis)
+    if not os.path.exists("log/differences.csv"):
+        df = pd.DataFrame(columns=['project','status'])
+        df.to_csv("log/differences.csv", index=False)
+    df = pd.read_csv("log/differences.csv")
     for i in range(len(projects)):
-        verify_project(input_projects_analysis, projects[i],base_dir)
-
+        if projects[i] not in df['project'].values:
+            verify_project(input_projects_analysis, projects[i],base_dir)
+            df.iloc[i] = [projects[i], "done"]
+            df.to_csv("log/differences.csv", index=False)
+        else:
+            print("Project " + projects[i] + " already analyzed")
 def verify_project(input_projects_analysis, project_name,base_dir):
     list_releases = get_all_directory_projects(input_projects_analysis + "\\" + project_name + "\\releases")
     for j in range(len(list_releases) - 1):
