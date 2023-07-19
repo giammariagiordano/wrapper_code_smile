@@ -1,5 +1,6 @@
 import os
 import subprocess
+
 import pandas as pd
 import git
 from pydriller import Repository, ModificationType
@@ -59,7 +60,7 @@ def run_code_smile(project, output_path):
         os.makedirs(output_path)
     output_path = os.path.abspath(output_path) + "/"
     project = project + "/"
-    command = ["python", "code_smile/controller/analyzer.py",
+    command = ["python", os.path.join("./","code_smile","controller","analyzer.py"),
                "--input", project, "--output", output_path]
     p = subprocess.run(command)
     p.check_returncode()
@@ -133,18 +134,17 @@ def analyze_differences(commit_path, commit):
     for index, row in after_overview.iterrows():
         file = row["filename"]
         function = row["function_name"]
-        smell = row["smell_name"]
+        smell = row["name_smell"]
         after_value = row["smell"]
         # if is in after and not in before
-        if before_overview.loc[before_overview["filename"] == file
-                               and before_overview["function_name"] == function
-                               and before_overview["smell_name"] == smell].empty:
-            difference = difference.append(
-                {"file": file, "smell": smell, "before": 0, "after": after_value, "difference": after_value,
-                 "modification": commit.hash}, ignore_index=True)
-        before_value = before_overview.loc[before_overview["filename"] == file
-                                           and before_overview["function_name"] == function
-                                           and before_overview["smell_name"] == smell]["smell"]
+
+        if (before_overview.loc[(before_overview["filename"] == file)
+                               & (before_overview["function_name"] == function)
+                               & (before_overview["name_smell"] == smell)] ).empty:
+            difference.loc[len(difference)] = [file, smell, 0, after_value, after_value, commit.hash]
+        before_value = before_overview.loc[(before_overview["filename"] == file)
+                               & (before_overview["function_name"] == function)
+                               & (before_overview["name_smell"] == smell)][0]["smell"]
         if before_value != after_value:
             difference = difference.append({"file": file, "smell": smell, "before": before_value, "after": after_value,
                                             "difference": after_value - before_value, "modification": commit.hash},
@@ -152,12 +152,12 @@ def analyze_differences(commit_path, commit):
     for index, row in before_overview.iterrows():
         file = row["filename"]
         function = row["function_name"]
-        smell = row["smell_name"]
+        smell = row["name_smell"]
         before_value = row["smell"]
         # if is in before and not in after
-        if after_overview.loc[after_overview["filename"] == file
-                              and after_overview["function_name"] == function
-                              and after_overview["smell_name"] == smell].empty:
+        if (after_overview.loc[(after_overview["filename"] == file)
+                               & (after_overview["function_name"] == function)
+                               & (after_overview["name_smell"] == smell)] ).empty:
             difference = difference.append(
                 {"file": file,
                  "smell": smell,
@@ -174,8 +174,8 @@ def reorganize_output_code_smile(destination_path, code_smile_dir_out):
     list_directory = get_all_directory_projects(code_smile_dir_out)
     list_directory.remove("releases")
     for sub_project in list_directory:
-        os.rename(code_smile_dir_out + "/" + sub_project, code_smile_dir_out + "/releases/" + sub_project)
-    os.rename(code_smile_dir_out, destination_path)
+        os.rename(os.path.join(code_smile_dir_out,sub_project), os.path.join(code_smile_dir_out,"releases",sub_project))
+    os.rename(code_smile_dir_out, os.path.join(os.path.abspath("."),destination_path))
 
 def get_project_name(project):
     return project.split("/")[-2]
@@ -215,6 +215,7 @@ def check_and_save_differences(input_directory, project):
 
         df_only_i.to_csv(os.path.join(differences_directory, commit_i + "___" + commit_j + ".csv"), index=False)
         df_only_j.to_csv(os.path.join(differences_directory, commit_j + "___" + commit_i + ".csv"), index=False)
+
 
 def estimate_smelliness_between_two_stable_versions(df1, df2):
     df1_dropped = df1.drop(columns=['filename'])
@@ -311,7 +312,6 @@ def verify_project(input_projects_analysis, project_name, base_dir):
                 j + 1] + " are different")
             analyze_commit_by_commit(input_projects_analysis + "/" + project_name + "/releases", list_releases[j],
                                      list_releases[j + 1], project_name, base_dir)
-
 
 if __name__ == '__main__':
     base_dir = "code_smile/input/projects/"
