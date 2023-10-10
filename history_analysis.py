@@ -21,13 +21,15 @@ def reset_repo_to_head(repo):
     repo = git.Repo(repo)
     repo.git.reset('--hard')
     repo.git.clean('-fd')
-    try:
-        repo.git.checkout('main')
-        repo.git.pull('origin', 'main')
-    except git.GitCommandError:
-        repo.git.checkout('master')
-        repo.git.pull('origin', 'master')
+    actual_path = os.getcwd()
+    os.chdir(repo.working_dir)
 
+    sys_command = "git remote show origin | findstr \"HEAD branch:\""
+
+    branch_name = subprocess.check_output(sys_command, shell=True).decode("utf-8").split(":")[1].split("\n")[0].strip()
+    print(branch_name)
+    repo.git.checkout(branch_name)
+    os.chdir(actual_path)
 def get_list_of_commits(repo):
     reset_repo_to_head(repo)
     commits = []
@@ -118,7 +120,7 @@ def start_analysis(project_path,replace=False):
         shutil.copytree(f"output_analysis/{file}_analysis",f"output_analysis_{output_time}/{file}")
 
 def main():
-    start_analysis("F://input//subset_05_10//",replace=True)
+    start_analysis("F://input//test//",replace=True)
 
 if __name__ == "__main__":
     main()
