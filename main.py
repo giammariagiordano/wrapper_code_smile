@@ -13,6 +13,56 @@ def get_all_directory_projects(project_path):
             projects.append(dir)
     return projects
 
+def get_list_of_commits(repo):
+    commits = []
+    for commit in Repository(repo).traverse_commits():
+        commits.append(commit)
+    return commits
+
+#get all_added_deleted and modified_files
+def get_commit_version(repo,commit):
+    repo = git.Repo(repo)
+    repo.git.checkout(commit.hash)
+    #get all_added_deleted and modified_files
+    os.mkdir(f'{repo.working_dir}_analysis/{commit.hash}')
+    os.mkdir(f'{repo.working_dir}_analysis/{commit.hash}/added')
+    os.mkdir(f'{repo.working_dir}_analysis/{commit.hash}/deleted')
+    os.mkdir(f'{repo.working_dir}_analysis/{commit.hash}/modified')
+    for modified_file in commit.modified_files:
+        if modified_file.filename.endswith(".py"):
+            file = open(f'{repo.working_dir}/{commit.hash}/modified/{modified_file.filename}', "w")
+            file.write(str(modified_file.source_code))
+            file.close()
+    for added_file in commit.added_files:
+        if added_file.endswith(".py"):
+            file = open(f'{repo.working_dir}/{commit.hash}/added/{added_file}', "w")
+            file.write(str(commit.repo.git.show(f'{commit.hash}:{added_file}')))
+            file.close()
+    for deleted_file in commit.deleted_files:
+        if deleted_file.endswith(".py"):
+            file = open(f'{repo.working_dir}/{commit.hash}/deleted/{deleted_file}', "w")
+            file.write(str(commit.repo.git.show(f'{commit.hash}^:{deleted_file}')))
+            file.close()
+
+def clone_commit_version_to_path(repo, commit, path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+    git.Repo.clone_from(repo, path)
+    repo = git.Repo(path)
+    repo.git.checkout(commit.hash)
+    os.makedirs(f'{path}/{commit.hash}')
+    for modified_file in commit.modified_files:
+        if modified_file.filename.endswith(".py"):
+            file = open(f'{path}/{commit.hash}/{modified_file.filename}', "w")
+            file.write(str(modified_file.source_code))
+            file.close()
+    for added_file in commit.added_files:
+        if added_file.endswith(".py"):
+            file = open(f'{path}/{commit.hash}/{added_file}', "w")
+            file.write(str(commit.repo.git.show(f'{commit.hash}:{added_file}')))
+            file.close()
+    print("Checkout to commit " + commit.hash + " successfully")
+    return True
 
 def get_list_of_releases(repo):
     releases = []
@@ -102,6 +152,19 @@ def create_modification_project(commit):
     return './temp/commit', './temp/before_commit'
 
 
+def analyze_single_commit(commit, project, output_path):
+    project += "/"
+    commit_path = output_path + "/internal_commits/" + commit.hash + "/"
+    if not os.path.exists(commit_path):
+        modifications = checkout_to_commit_modifications(commit)
+        if len(modifications) > 0:
+            commit_project, before_commit_project = create_modification_project(commit)
+            # it skips all modifications that are not related to python files
+            os.makedirs(commit_path)
+            run_code_smile(commit_project, commit_path)
+            run_code_smile(before_commit_project, commit_path + "/before_commit/")
+
+
 def analyze_commit_by_commit(path_with_releases, release_i, release_j, project, base_dir):
     path_without_release = os.path.dirname(path_with_releases)
     commit_i_without_proj_name = get_hash_from_project_name(release_i)
@@ -121,6 +184,8 @@ def analyze_commit_by_commit(path_with_releases, release_i, release_j, project, 
                 run_code_smile(commit_project, commit_path)
                 run_code_smile(before_commit_project, commit_path + "/before_commit/")
                 analyze_differences(commit_path, commit)
+
+
 
 
 
@@ -312,6 +377,7 @@ def verify_project(input_projects_analysis, project_name, base_dir):
                 j + 1] + " are different")
             analyze_commit_by_commit(input_projects_analysis + "/" + project_name + "/releases", list_releases[j],
                                      list_releases[j + 1], project_name, base_dir)
+
 
 if __name__ == '__main__':
     base_dir = "code_smile/input/projects/"

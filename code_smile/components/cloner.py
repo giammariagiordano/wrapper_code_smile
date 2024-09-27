@@ -4,11 +4,11 @@
 
 import os
 import pandas as pd
-BASE_PATH = "../input/projects/"
+BASE_PATH = "F:/"
 
 def get_repo(repo_url):
     folder_url = repo_url.replace("/", "")
-    build_path = BASE_PATH+"/"+folder_url
+    build_path = BASE_PATH+"/project_history_analysis/"+folder_url
 
     build_path = os.path.abspath(build_path)
     if not os.path.exists(build_path):
@@ -30,36 +30,37 @@ def debug_filter_repo(df):
     return df
 
 def get_debug_projects():
-    df = pd.read_csv("../input/dataset/NICHE.csv")
+    df = pd.read_csv("../../NICHE_221_330.csv")
     df = filter_repos(df)
     df = debug_filter_repo(df)
     for repo_url in df["GitHub_Repo"]:
         get_repo(repo_url)
 
 def get_projects():
-    df = pd.read_csv("../input/dataset/NICHE.csv")
-    df = filter_repos(df)
+    df = pd.read_csv("../../code_smile/input/dataset/NICHE_no_filtered_sample.csv")
+    #get last five elements
+    df = df.tail(5)
+    #df = filter_repos(df)
     for repo_url in df["GitHub_Repo"]:
         get_repo(repo_url)
 def clean():
     if os.name == "nt":
-        if os.path.exists(".\\projects"):
-            os.system("rmdir /s /q .\\projects")
+        if os.path.exists(".\\project_history_analysis"):
+            os.system("rmdir /s /q .\\project_history_analysis")
     else:
-        if os.path.exists("./projects"):
-            os.system("rm -r ./projects")
+        if os.path.exists("./project_history_analysis"):
+            os.system("rm -r ./project_history_analysis")
 
 def setup():
     if os.name == "nt":
-        if not os.path.exists(f"{BASE_PATH}/projects"):
-            os.makedirs(f"{BASE_PATH}/projects")
+        if not os.path.exists(f"{BASE_PATH}/project_history_analysis"):
+            os.makedirs(f"{BASE_PATH}/project_history_analysis")
     else:
-        if not os.path.exists(f"{BASE_PATH}/projects"):
-            os.makedirs(f"{BASE_PATH}/projects")
+        if not os.path.exists(f"{BASE_PATH}/project_history_analysis"):
+            os.makedirs(f"{BASE_PATH}/project_history_analysis")
 
 
 if __name__ == "__main__":
-    clean()
     setup()
     get_projects()
 

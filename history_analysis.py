@@ -3,6 +3,7 @@ import subprocess
 import time
 
 import git
+from git import GitCommandError
 from pydriller import Repository, ModificationType
 
 def run_code_smile(project, output_path):
@@ -17,19 +18,7 @@ def run_code_smile(project, output_path):
     print("Code_smile executed successfully")
 
 
-def reset_repo_to_head(repo):
-    repo = git.Repo(repo)
-    repo.git.reset('--hard')
-    repo.git.clean('-fd')
-    actual_path = os.getcwd()
-    os.chdir(repo.working_dir)
 
-    sys_command = "git remote show origin | findstr \"HEAD branch:\""
-
-    branch_name = subprocess.check_output(sys_command, shell=True).decode("utf-8").split(":")[1].split("\n")[0].strip()
-    print(branch_name)
-    repo.git.checkout(branch_name)
-    os.chdir(actual_path)
 def get_list_of_commits(repo):
     reset_repo_to_head(repo)
     commits = []
@@ -40,7 +29,11 @@ def get_list_of_commits(repo):
 
 def set_working_directories(repo,commit,replace=False):
     repo = git.Repo(repo)
-    repo.git.checkout(commit.hash)
+    try:
+        repo.git.checkout(commit.hash)
+    except:
+        print("Error in checkout")
+        return None
     repo_name = repo.working_dir.split("\\")[-1]
     if replace:
         if os.path.exists(os.path.join("output_analysis",f'{repo.working_dir}_analysis')):
@@ -72,7 +65,8 @@ def get_commit_version(repo, commit,replace=False):
     if len(modified_files) == 0:
         return None
     results_path = set_working_directories(repo, commit,replace)
-
+    if results_path is None:
+        return None
     for modified_file in modified_files:
         if modified_file.filename.endswith(".py"):
             if modified_file.change_type == ModificationType.MODIFY:
@@ -99,12 +93,22 @@ def cleaning():
         shutil.rmtree("output_analysis")
     os.mkdir("output_analysis")
 
-def start_analysis(project_path,replace=False):
+def start_analysis(project_path,replace=False,start_index=0,end_index=0):
     cleaning()
     output_time = time.time()
+    count = 0
     for file in os.listdir(project_path):
         print("Analysing "+file)
-        commits = get_list_of_commits(project_path + file)
+        if count < start_index:
+            count += 1
+            continue
+        if count > end_index:
+            break
+        try:
+            commits = get_list_of_commits(project_path + file)
+        except GitCommandError:
+            print("Error in get_list_of_commits")
+            continue
         for commit in commits:
             commit_version = get_commit_version(project_path + file, commit,replace)
             if commit_version is None:
@@ -118,9 +122,10 @@ def start_analysis(project_path,replace=False):
         print(f"Analysis of {file} completed")
         #backup in another folder
         shutil.copytree(f"output_analysis/{file}_analysis",f"output_analysis_{output_time}/{file}")
+        count += 1
 
 def main():
-    start_analysis("F://input//test//",replace=True)
+    start_analysis("F://input//projects22-06//",replace=True,start_index=31,end_index=60)
 
 if __name__ == "__main__":
     main()

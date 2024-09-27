@@ -3,8 +3,14 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/venv" />
+      <excludeFolder url="file://$MODULE_DIR$/output/projects_analysis" />
+      <excludeFolder url="file://$MODULE_DIR$/output/projects_analysis_2023-09-08_16-42-03-673233" />
+      <excludeFolder url="file://$MODULE_DIR$/output/projects_analysis_2023-09-08_16-44-29-456703" />
+      <excludeFolder url="file://$MODULE_DIR$/output_analysis" />
+      <excludeFolder url="file://$MODULE_DIR$/output_analysis_1696499965.3967419" />
+      <excludeFolder url="file://$MODULE_DIR$/code_smile/input/projects" />
     </content>
-    <orderEntry type="inheritedJdk" />
+    <orderEntry type="jdk" jdkName="Python 3.11 (wrapper_code_smile)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>

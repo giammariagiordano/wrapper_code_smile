@@ -15,11 +15,11 @@ def split_dataset():
 
 def filter_dataset(filename):
     df = pd.read_csv(filename)
-    out_file_name = filename.split(".")[0]+"_filtered.csv"
-    df = df[df["Stars"] > 100]
-    df = df[df["Commits"] > 100]
-    df = df[df["Lines of Code"] > 5000]
-    df = df[df["Contributors"] > 2]
+    out_file_name = filename.split(".")[0]+"_filtered_sample.csv"
+    df = df[df["Stars"] > 300]
+    df = df[df["Commits"] > 300]
+    df = df[df["Lines of Code"] > 9000]
+    df = df[df["Contributors"] > 4]
     df = df[df["Age"] > 730]
 
     df.to_csv(out_file_name,index=False)
