@@ -1,0 +1,4 @@
+pandas
+pydriller
+numpy~=1.24.2
+PyGithub
