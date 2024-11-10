@@ -89,7 +89,11 @@ def get_commit_version(repo, commit,replace=False):
     for modified_file in modified_files:
         if modified_file.filename.endswith(".py"):
             #get folder path of the modified file without filename
-            new_path = os.path.dirname(modified_file.new_path)
+            new_path = ""
+            if modified_file.change_type == ModificationType.MODIFY or modified_file.change_type == ModificationType.ADD:
+                new_path = os.path.dirname(modified_file.new_path)
+            elif modified_file.change_type == ModificationType.DELETE:
+                new_path = os.path.dirname(modified_file.old_path)
             if modified_file.change_type == ModificationType.MODIFY:
 
                 #create folders for the new modified file to modified_file.newpath
@@ -112,12 +116,18 @@ def get_commit_version(repo, commit,replace=False):
             elif modified_file.change_type == ModificationType.DELETE:
                 if not os.path.exists(os.path.join(results_path,"input", f'deleted', f'{new_path}')):
                     os.makedirs(os.path.join(results_path,"input", f'deleted', f'{new_path}'))
-                file = open(os.path.join(results_path,"input", f'deleted', f'{modified_file.new_path}'), "w",encoding="utf-8")
-                file.close()
+                try:
+                    if modified_file.source_code_before is not None:
+                        file = open(os.path.join(results_path,"input", f'deleted', f'{modified_file.old_path}'), "w",encoding="utf-8")
+                        file.write(modified_file.source_code_before)
+                        file.close()
+                except AttributeError:
+                    print("Error NoneType")
 
     return results_path
 
 def cleaning():
+
     if os.path.exists("output_analysis"):
         shutil.rmtree("output_analysis")
     os.mkdir("output_analysis")
@@ -131,13 +141,42 @@ def create_output_folder(base_path,project_name,output_time=str(time.time())):
         os.makedirs(os.path.join(base_path,project_name))
     return os.path.join(base_path,project_name)
 
-def start_analysis(project_path,replace=False,start_index=0,end_index=0):
+def logging(project_name):
+    with open("execution_log.txt","a") as f:
+        f.write(project_name)
+        f.write("\n")
+    with open("detailed_log.txt","a") as f:
+        f.write(project_name)
+        f.write(f"Analyzed in run {output_time}")
+        f.write("\n")
+
+
+def clean_log():
+    with open("execution_log.txt","w") as f:
+        f.write("")
+    with open("detailed_log.txt","w") as f:
+        f.write("")
+
+
+
+
+def get_log_projects():
+    projects = []
+    with open("execution_log.txt","r") as f:
+        projects = f.readlines()
+    return projects
+def start_analysis(project_path,replace=False,start_index=0,end_index=0,restart=False):
     cleaning()
     output_path = './output_analysis/'
-
+    if restart:
+        clean_log()
     count = 0
+    analyzed_projects = get_log_projects()
+
     for file in os.listdir(project_path):
         print("Analysing "+file)
+        if file in analyzed_projects:
+            continue
         if count < start_index:
             count += 1
             continue
@@ -160,10 +199,11 @@ def start_analysis(project_path,replace=False,start_index=0,end_index=0):
             run_code_smile(delete_path, os.path.join(output_path,commit.hash,"output","deleted"))
             run_code_smile(modify_path, os.path.join(output_path,commit.hash,"output","modified"))
         print(f"Analysis of {file} completed")
+        logging(file)
         count += 1
 
 def main():
-    start_analysis(os.path.join(str('./'),'code_smile','input','projects'),replace=True,start_index=0,end_index=60)
+    start_analysis(os.path.join(str('./'),'code_smile','input','projects'),replace=True,start_index=0,end_index=600,restart=True)
 
 if __name__ == "__main__":
     main()
