@@ -2,6 +2,8 @@ import os, shutil
 import subprocess
 import time
 
+from concurrent.futures import ThreadPoolExecutor
+
 import git
 from git import GitCommandError
 from pydriller import Repository, ModificationType
@@ -13,7 +15,7 @@ def run_code_smile(project, output_path):
         os.makedirs(output_path)
     output_path = os.path.abspath(output_path) + "/"
     project = project + "/"
-    command = ["python", os.path.join("./","code_smile","controller","analyzer.py"),
+    command = ["python3", os.path.join("./","code_smile","controller","analyzer.py"),
                "--input", project, "--output", output_path]
     p = subprocess.run(command)
     p.check_returncode()
@@ -165,45 +167,76 @@ def get_log_projects():
     with open("execution_log.txt","r") as f:
         projects = f.readlines()
     return projects
-def start_analysis(project_path,replace=False,start_index=0,end_index=0,restart=False):
-    cleaning()
+
+def start_analysis(project_path, replace=False, start_index=0, end_index=0, restart=False, workers=16):
+    """
+    Start analysis of projects, distributing files among workers.
+    """
     output_path = './output_analysis/'
+
     if restart:
         clean_log()
-    count = 0
-    analyzed_projects = get_log_projects()
 
-    for file in os.listdir(project_path):
-        print("Analysing "+file)
-        if file in analyzed_projects:
-            continue
-        if count < start_index:
-            count += 1
-            continue
-        if count > end_index:
-            break
-        try:
-            commits = get_list_of_commits(os.path.join(project_path,file))
-        except GitCommandError:
-            print("Error in get_list_of_commits")
-            continue
-        output_path = create_output_folder(output_path,f'{file}_analysis',output_time)
+    print("Analysis Start Now!")
+
+    # Get list of all project files
+    analyzed_projects = get_log_projects()
+    files = [
+        file for file in os.listdir(project_path)
+        if file not in analyzed_projects
+    ]
+
+    # Optionally slice the files based on start and end indices
+    if end_index > 0:
+        files = files[start_index:end_index]
+
+    print(f"Found {len(files)} files to analyze.")
+
+    # Use ThreadPoolExecutor for parallel analysis
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        executor.map(lambda file: analyze_single_project(project_path, file), files)
+
+    print("Analysis completed for all files.")
+
+
+def analyze_single_project(project_path, file):
+    """
+    Analyzes a single project.
+    """
+    output_path = './output_analysis/'
+    try:
+        print(f"Starting analysis for {file}...")
+
+        # Get the list of commits
+        commits = get_list_of_commits(os.path.join(project_path, file))
+        if not commits:
+            print(f"No commits found for {file}. Skipping.")
+            return
+
+        # Create output folder
+        project_output_path = create_output_folder(output_path, f'{file}_analysis', output_time)
+
+        # Process each commit
         for commit in commits:
-            commit_version = get_commit_version(os.path.join(project_path,file), commit,replace)
+            commit_version = get_commit_version(os.path.join(project_path, file), commit)
             if commit_version is None:
                 continue
-            add_path = os.path.join(commit_version,"input", "added")
-            delete_path = os.path.join(commit_version,"input", "deleted")
-            modify_path = os.path.join(commit_version,"input", "modified")
-            run_code_smile(add_path, os.path.join(output_path,commit.hash,"output","added"))
-            run_code_smile(delete_path, os.path.join(output_path,commit.hash,"output","deleted"))
-            run_code_smile(modify_path, os.path.join(output_path,commit.hash,"output","modified"))
-        print(f"Analysis of {file} completed")
+
+            # Analyze added, deleted, and modified paths
+            add_path = os.path.join(commit_version, "input", "added")
+            delete_path = os.path.join(commit_version, "input", "deleted")
+            modify_path = os.path.join(commit_version, "input", "modified")
+            run_code_smile(add_path, os.path.join(project_output_path, commit.hash, "output", "added"))
+            run_code_smile(delete_path, os.path.join(project_output_path, commit.hash, "output", "deleted"))
+            run_code_smile(modify_path, os.path.join(project_output_path, commit.hash, "output", "modified"))
+
+        print(f"Analysis of {file} completed.")
         logging(file)
-        count += 1
+    except Exception as e:
+        print(f"Error analyzing project {file}: {e}")
 
 def main():
-    start_analysis(os.path.join(str('./'),'code_smile','input','projects'),replace=True,start_index=0,end_index=600,restart=True)
+    start_analysis(os.path.join(str('./'),'code_smile','input','projects'),replace=True,start_index=0,end_index=600,restart=False)
 
 if __name__ == "__main__":
     main()
