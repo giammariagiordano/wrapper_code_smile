@@ -181,9 +181,11 @@ def start_analysis(project_path, replace=False, start_index=0, end_index=0, rest
 
     # Get list of all project files
     analyzed_projects = get_log_projects()
+    for i in range(len(analyzed_projects)):
+        analyzed_projects[i] = analyzed_projects[i].replace("\n","")
     files = [
         file for file in os.listdir(project_path)
-        if file not in analyzed_projects
+        if file.replace("\n","") not in analyzed_projects
     ]
 
     # Optionally slice the files based on start and end indices
