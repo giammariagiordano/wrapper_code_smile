@@ -233,7 +233,7 @@ def in_place_apis_misused(libraries, filename, fun_node, df_dict):
         return [], []
     smell_instance_list = []
     in_place_apis = 0
-    for node in ast.iter_child_nodes(fun_node):
+    for node in ast.walk(fun_node):
         in_place_flag = False
         if isinstance(node, ast.Expr):
             if isinstance(node.value, ast.Call):
@@ -246,12 +246,23 @@ def in_place_apis_misused(libraries, filename, fun_node, df_dict):
                                         in_place_flag = True
                     if not in_place_flag:
                         df = df_dict[df_dict['return_type'] == 'DataFrame']
+
+
+
+
+                        #check if the method is in the list of in-place methods
                         if node.value.func.attr in df['method'].values:
-                            new_smell = {'filename': filename, 'function_name': function_name,
-                                            'smell_name': 'in_place_apis_misused',
-                                            'line': node.lineno}
-                            smell_instance_list.append(new_smell)
-                            in_place_apis += 1
+                            if hasattr(node.value.func.value, 'id'):
+
+                                # check if there is a object of type DataFrame
+                                variables = dataframe_check(fun_node, libraries, df_dict)
+                                if node.value.func.value.id in variables:
+                                    new_smell = {'filename': filename, 'function_name': function_name,
+                                                    'smell_name': 'in_place_apis_misused',
+                                                    'line': node.lineno}
+                                    smell_instance_list.append(new_smell)
+                                    in_place_apis += 1
+
 
     if in_place_apis > 0:
         message = "We suggest developers check whether the result of the operation is assigned to a variable or the" \
