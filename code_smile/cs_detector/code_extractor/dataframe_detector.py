@@ -23,6 +23,57 @@ def dataframe_check(fun_node, libraries,df_dict):
     return recursive_search_variables(fun_node,list,df_dict)
         # extract_variables([short])
 
+def dataframe_check_at_line(fun_node, libraries, df_dict, target_line):
+    """
+    Check the state of variables as of the specified target line.
+    """
+    short = search_pandas_library(libraries)
+    if short is None:
+        return []
+
+    # Initialize the variable state with the library alias
+    variable_states = {short: {'type': 'DataFrame', 'line': 0}}
+
+    # Walk through the AST and track variable assignments up to target_line
+    for node in ast.walk(fun_node):
+        if isinstance(node, ast.Assign):
+            if hasattr(node, 'lineno') and node.lineno >= target_line:
+                continue  # Skip nodes beyond the target line
+
+            target_id = None
+            if isinstance(node.targets, list) and hasattr(node.targets[0], 'id'):
+                target_id = node.targets[0].id
+
+            # Analyze the right-hand side of the assignment
+            if isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Attribute):
+                func_name = node.value.func.attr
+                obj_name = (
+                    node.value.func.value.id
+                    if isinstance(node.value.func.value, ast.Name)
+                    else None
+                )
+
+                if obj_name in variable_states and func_name in df_dict['method'].tolist():
+                    # Variable is assigned a DataFrame-related result
+                    variable_states[target_id] = {'type': 'DataFrame', 'line': node.lineno}
+
+            elif isinstance(node.value, ast.Name) and node.value.id in variable_states:
+                # Variable is assigned another variable's value
+                if target_id:
+                    variable_states[target_id] = variable_states[node.value.id]
+
+            elif isinstance(node.value, ast.List):
+                # Variable is explicitly assigned a list
+                if target_id:
+                    variable_states[target_id] = {'type': 'List', 'line': node.lineno}
+
+    # Filter only DataFrame variables that exist before the target line
+    dataframe_vars = [
+        var for var, state in variable_states.items()
+        if state['type'] == 'DataFrame' and state['line'] < target_line
+    ]
+    return dataframe_vars
+
 
 def recursive_search_variables(fun_node,init_list,df_dict):
     list = init_list.copy()
