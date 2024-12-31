@@ -223,7 +223,6 @@ def nan_equivalence_comparison_misused(libraries, filename, fun_node):
             return to_return, smell_instance_list
         return [], []
     return [], []
-
 def in_place_apis_misused(libraries, filename, fun_node, df_dict):
     """
     Detects misuse of in-place APIs for pandas DataFrames in the given function node.
@@ -279,6 +278,7 @@ def in_place_apis_misused(libraries, filename, fun_node, df_dict):
         return to_return, smell_instance_list
 
     return [], []
+
 
 
 

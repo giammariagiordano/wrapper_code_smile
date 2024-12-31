@@ -21,11 +21,14 @@ def dataframe_check(fun_node, libraries,df_dict):
     if short is None:
         return None
     return recursive_search_variables(fun_node,list,df_dict)
-        # extract_variables([short])
+ 
+
+
 
 def dataframe_check_at_line(fun_node, libraries, df_dict, target_line):
     """
-    Check the state of variables as of the specified target line.
+    Check the state of variables as of the specified target line, including intermediate variables,
+    while explicitly tracking their types.
     """
     short = search_pandas_library(libraries)
     if short is None:
@@ -36,10 +39,10 @@ def dataframe_check_at_line(fun_node, libraries, df_dict, target_line):
 
     # Walk through the AST and track variable assignments up to target_line
     for node in ast.walk(fun_node):
-        if isinstance(node, ast.Assign):
-            if hasattr(node, 'lineno') and node.lineno >= target_line:
-                continue  # Skip nodes beyond the target line
+        if hasattr(node, 'lineno') and node.lineno >= target_line:
+            continue  # Skip nodes beyond the target line
 
+        if isinstance(node, ast.Assign):
             target_id = None
             if isinstance(node.targets, list) and hasattr(node.targets[0], 'id'):
                 target_id = node.targets[0].id
@@ -53,8 +56,8 @@ def dataframe_check_at_line(fun_node, libraries, df_dict, target_line):
                     else None
                 )
 
+                # Check if derived from a DataFrame variable
                 if obj_name in variable_states and func_name in df_dict['method'].tolist():
-                    # Variable is assigned a DataFrame-related result
                     variable_states[target_id] = {'type': 'DataFrame', 'line': node.lineno}
 
             elif isinstance(node.value, ast.Name) and node.value.id in variable_states:
@@ -67,12 +70,23 @@ def dataframe_check_at_line(fun_node, libraries, df_dict, target_line):
                 if target_id:
                     variable_states[target_id] = {'type': 'List', 'line': node.lineno}
 
+        elif isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+            # Track intermediate objects from method calls on DataFrames
+            obj_name = node.func.value.id if isinstance(node.func.value, ast.Name) else None
+            func_name = node.func.attr
+
+            if obj_name in variable_states and func_name == "groupby":
+                # Derive intermediate variables from groupby
+                if hasattr(node, 'lineno'):
+                    variable_states[obj_name] = {'type': 'DataFrame', 'line': node.lineno}
+
     # Filter only DataFrame variables that exist before the target line
     dataframe_vars = [
         var for var, state in variable_states.items()
         if state['type'] == 'DataFrame' and state['line'] < target_line
     ]
     return dataframe_vars
+
 
 
 def recursive_search_variables(fun_node,init_list,df_dict):
