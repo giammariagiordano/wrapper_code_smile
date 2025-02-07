@@ -1,8 +1,4 @@
 import pandas as pd
-
-
-
-
 def smell_report():
     df = pd.read_csv('overview_output.csv')
     #filter dataframe with only the columns we need

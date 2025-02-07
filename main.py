@@ -3,8 +3,7 @@ import subprocess
 
 import pandas as pd
 import git
-from pydriller import Repository
-import logging
+from pydriller import Repository, ModificationType
 
 
 def get_all_directory_projects(project_path):
@@ -14,6 +13,56 @@ def get_all_directory_projects(project_path):
             projects.append(dir)
     return projects
 
+def get_list_of_commits(repo):
+    commits = []
+    for commit in Repository(repo).traverse_commits():
+        commits.append(commit)
+    return commits
+
+#get all_added_deleted and modified_files
+def get_commit_version(repo,commit):
+    repo = git.Repo(repo)
+    repo.git.checkout(commit.hash)
+    #get all_added_deleted and modified_files
+    os.mkdir(f'{repo.working_dir}_analysis/{commit.hash}')
+    os.mkdir(f'{repo.working_dir}_analysis/{commit.hash}/added')
+    os.mkdir(f'{repo.working_dir}_analysis/{commit.hash}/deleted')
+    os.mkdir(f'{repo.working_dir}_analysis/{commit.hash}/modified')
+    for modified_file in commit.modified_files:
+        if modified_file.filename.endswith(".py"):
+            file = open(f'{repo.working_dir}/{commit.hash}/modified/{modified_file.filename}', "w")
+            file.write(str(modified_file.source_code))
+            file.close()
+    for added_file in commit.added_files:
+        if added_file.endswith(".py"):
+            file = open(f'{repo.working_dir}/{commit.hash}/added/{added_file}', "w")
+            file.write(str(commit.repo.git.show(f'{commit.hash}:{added_file}')))
+            file.close()
+    for deleted_file in commit.deleted_files:
+        if deleted_file.endswith(".py"):
+            file = open(f'{repo.working_dir}/{commit.hash}/deleted/{deleted_file}', "w")
+            file.write(str(commit.repo.git.show(f'{commit.hash}^:{deleted_file}')))
+            file.close()
+
+def clone_commit_version_to_path(repo, commit, path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+    git.Repo.clone_from(repo, path)
+    repo = git.Repo(path)
+    repo.git.checkout(commit.hash)
+    os.makedirs(f'{path}/{commit.hash}')
+    for modified_file in commit.modified_files:
+        if modified_file.filename.endswith(".py"):
+            file = open(f'{path}/{commit.hash}/{modified_file.filename}', "w")
+            file.write(str(modified_file.source_code))
+            file.close()
+    for added_file in commit.added_files:
+        if added_file.endswith(".py"):
+            file = open(f'{path}/{commit.hash}/{added_file}', "w")
+            file.write(str(commit.repo.git.show(f'{commit.hash}:{added_file}')))
+            file.close()
+    print("Checkout to commit " + commit.hash + " successfully")
+    return True
 
 def get_list_of_releases(repo):
     releases = []
@@ -41,61 +90,164 @@ def get_list_of_commits_between_two_releases_with_hash(repo, initial_release, fi
 
 
 def checkout_to_commit(project, commit):
-    try:
-        repo = git.Repo(project)
-        repo.git.checkout(commit.hash)
-        print("Checkout to commit " + commit.hash + " successfully")
-        return True
+    repo = git.Repo(project)
+    repo.git.checkout(commit.hash)
+    print("Checkout to commit " + commit.hash + " successfully")
+    return True
 
-    except:
-        print("Error checking out commit " + commit.hash)
-        return False
+
+def checkout_to_commit_modifications(commit):
+    modified_list = []
+    for modified_file in commit.modified_files:
+        # filter is modifications is on python files
+        if modified_file.filename.endswith(".py"):
+            modified_list.append(modified_file.filename)
+    return modified_list
 
 
 def run_code_smile(project, output_path):
     if not os.path.exists(output_path):
         os.makedirs(output_path)
     output_path = os.path.abspath(output_path) + "/"
-    project = project + "\\"
-    command = ["python", "C:\\Users\\pc\\Desktop\\wrapper_code_smile\\code_smile\\controller\\analyzer.py",
+    project = project + "/"
+    command = ["python", os.path.join("./","code_smile","controller","analyzer.py"),
                "--input", project, "--output", output_path]
     p = subprocess.run(command)
     p.check_returncode()
     print("Code_smile executed successfully")
 
 
-def analyze_commit_by_commit(path_with_releases, commit_i, commit_j, project, base_dir):
+def clear_temp():
+    if os.path.exists("./temp/"):
+        os.system("rm -rf ./temp/")
+
+
+def create_modification_project(commit):
+    clear_temp()
+    os.makedirs("./temp/")
+    os.makedirs("./temp/before_commit/")
+    os.makedirs("./temp/commit/")
+    added = []
+    modified = []
+    deleted = []
+    for modified_file in commit.modified_files:
+        if modified_file.filename.endswith(".py"):
+            # get file
+            if modified_file.change_type == ModificationType.DELETE:
+                file = open("./temp/before_commit/" + modified_file.filename, "w")
+                file.write(str(modified_file.source_code_before))
+                file.close()
+                deleted.append(modified_file.filename)
+            elif modified_file.change_type == ModificationType.ADD or modified_file.change_type == ModificationType.MODIFY:
+                file = open("./temp/commit/" + modified_file.filename, "w")
+                file.write(str(modified_file.source_code))
+                file.close()
+                if modified_file.change_type == ModificationType.ADD:
+                    added.append(modified_file.filename)
+                elif modified_file.change_type == ModificationType.MODIFY:
+                    modified.append(modified_file.filename)
+                    file = open("./temp/before_commit/" + modified_file.filename, "w")
+                    file.write(str(modified_file.source_code_before))
+                    file.close()
+    return './temp/commit', './temp/before_commit'
+
+
+def analyze_single_commit(commit, project, output_path):
+    project += "/"
+    commit_path = output_path + "/internal_commits/" + commit.hash + "/"
+    if not os.path.exists(commit_path):
+        modifications = checkout_to_commit_modifications(commit)
+        if len(modifications) > 0:
+            commit_project, before_commit_project = create_modification_project(commit)
+            # it skips all modifications that are not related to python files
+            os.makedirs(commit_path)
+            run_code_smile(commit_project, commit_path)
+            run_code_smile(before_commit_project, commit_path + "/before_commit/")
+
+
+def analyze_commit_by_commit(path_with_releases, release_i, release_j, project, base_dir):
     path_without_release = os.path.dirname(path_with_releases)
-    commit_i_without_proj_name = get_hash_from_project_name(commit_i)
-    commit_j_without_proj_name = get_hash_from_project_name(commit_j)
+    commit_i_without_proj_name = get_hash_from_project_name(release_i)
+    commit_j_without_proj_name = get_hash_from_project_name(release_j)
     commits = get_list_of_commits_between_two_releases(base_dir + project, commit_i_without_proj_name,
                                                        commit_j_without_proj_name)
-    project += "\\"
+    project += "/"
+
     for commit in commits:
-        commit_path = path_without_release + "\\internal_commits\\" + "between_commits___from" + commit_i_without_proj_name + "___to" + commit_j_without_proj_name + "\\" + commit.hash + "\\"
+        commit_path = path_without_release + "/internal_commits/" + "between_commits___from" + commit_i_without_proj_name + "___to" + commit_j_without_proj_name + "/" + commit.hash + "/"
         if not os.path.exists(commit_path):
-            os.makedirs(commit_path)
-            checkout_to_commit(base_dir + project, commit)
-            run_code_smile(base_dir + project, commit_path)
+            modifications = checkout_to_commit_modifications(commit)
+            if len(modifications) > 0:
+                commit_project, before_commit_project = create_modification_project(commit)
+                # it skips all modifications that are not related to python files
+                os.makedirs(commit_path)
+                run_code_smile(commit_project, commit_path)
+                run_code_smile(before_commit_project, commit_path + "/before_commit/")
+                analyze_differences(commit_path, commit)
 
 
-def reorganize_output_code_smile(code_smile_dir_out):
-    if not os.path.exists(code_smile_dir_out + "\\releases\\"):
-        os.makedirs(code_smile_dir_out + "\\releases\\")
 
+
+
+def analyze_differences(commit_path, commit):
+    before_commit_path = commit_path + "/before_commit/"
+    before_overview = before_commit_path + "to_save.csv"
+    before_overview = pd.read_csv(before_overview)
+    after_overview = commit_path + "to_save.csv"
+    after_overview = pd.read_csv(after_overview)
+    difference = pd.DataFrame(columns=["file", "smell", "before", "after", "difference", "modification"])
+    for index, row in after_overview.iterrows():
+        file = row["filename"]
+        function = row["function_name"]
+        smell = row["name_smell"]
+        after_value = row["smell"]
+        # if is in after and not in before
+
+        if (before_overview.loc[(before_overview["filename"] == file)
+                               & (before_overview["function_name"] == function)
+                               & (before_overview["name_smell"] == smell)] ).empty:
+            difference.loc[len(difference)] = [file, smell, 0, after_value, after_value, commit.hash]
+        before_value = before_overview.loc[(before_overview["filename"] == file)
+                               & (before_overview["function_name"] == function)
+                               & (before_overview["name_smell"] == smell)][0]["smell"]
+        if before_value != after_value:
+            difference = difference.append({"file": file, "smell": smell, "before": before_value, "after": after_value,
+                                            "difference": after_value - before_value, "modification": commit.hash},
+                                           ignore_index=True)
+    for index, row in before_overview.iterrows():
+        file = row["filename"]
+        function = row["function_name"]
+        smell = row["name_smell"]
+        before_value = row["smell"]
+        # if is in before and not in after
+        if (after_overview.loc[(after_overview["filename"] == file)
+                               & (after_overview["function_name"] == function)
+                               & (after_overview["name_smell"] == smell)] ).empty:
+            difference = difference.append(
+                {"file": file,
+                 "smell": smell,
+                 "before": before_value,
+                 "after": 0,
+                 "difference": 0-before_value,
+                 "modification": commit.hash},
+                ignore_index=True)
+
+
+def reorganize_output_code_smile(destination_path, code_smile_dir_out):
+    if not os.path.exists(code_smile_dir_out + "/releases/"):
+        os.makedirs(code_smile_dir_out + "/releases/")
     list_directory = get_all_directory_projects(code_smile_dir_out)
     list_directory.remove("releases")
     for sub_project in list_directory:
-        os.rename(code_smile_dir_out+"\\"+sub_project,code_smile_dir_out+"\\releases\\"+sub_project)
-
+        os.rename(os.path.join(code_smile_dir_out,sub_project), os.path.join(code_smile_dir_out,"releases",sub_project))
+    os.rename(code_smile_dir_out, os.path.join(os.path.abspath("."),destination_path))
 
 def get_project_name(project):
-    return project.split("\\")[-2]
-
+    return project.split("/")[-2]
 
 def check_and_save_differences(input_directory, project):
     project_name = get_project_name(project)
-    differences_directory = "differences\\" + project_name + "\\"
+    differences_directory = "differences/" + project_name + "/"
     if not os.path.exists(differences_directory):
         os.makedirs(differences_directory)
     if not os.path.exists(project):
@@ -143,11 +295,10 @@ def estimate_smelliness_between_two_stable_versions(df1, df2):
         else:
             return "different_smells_but_same_smelliness"
 
-
-def start_analysis(project_path, dir,output_dir,base_dir):
+def start_analysis(project_path, dir, output_dir, base_dir):
     print("*******************Starting analysis of project " + dir + "*******************")
     output_dir_code_smile = "code_smile/output/projects_analysis/" + dir + "/"
-    output_dir_code_smile = os.path.abspath(output_dir_code_smile) + "\\"
+    output_dir_code_smile = os.path.abspath(output_dir_code_smile) + "/"
     list_of_releases = get_list_of_releases(project_path)
     for release in list_of_releases:
         project_path_and_hash = project_path + "___" + release.hash
@@ -162,51 +313,75 @@ def start_analysis(project_path, dir,output_dir,base_dir):
             os.rename(project_path + "___" + release.hash, project_path)
 
     # check_and_save_differences(project_path, output_dir_code_smile)
-    reorganize_output_code_smile(output_dir+"\\"+dir)
-    verify_project(output_dir,dir,base_dir)
-
+    reorganize_output_code_smile(output_dir + "/" + dir, output_dir_code_smile)
     print("*******************Analysis of project " + dir + " finished*******************")
-
 
 def verify_differencies(input_projects_analysis, base_dir):
     projects = get_all_directory_projects(input_projects_analysis)
     if not os.path.exists("log/differences.csv"):
-        df = pd.DataFrame(columns=['project','status'])
+        df = pd.DataFrame(columns=['project', 'status'])
         df.to_csv("log/differences.csv", index=False)
     df = pd.read_csv("log/differences.csv")
     for i in range(len(projects)):
         if projects[i] not in df['project'].values:
-            verify_project(input_projects_analysis, projects[i],base_dir)
+            verify_project(input_projects_analysis, projects[i], base_dir)
             df.iloc[i] = [projects[i], "done"]
             df.to_csv("log/differences.csv", index=False)
         else:
             print("Project " + projects[i] + " already analyzed")
-def verify_project(input_projects_analysis, project_name,base_dir):
-    list_releases = get_all_directory_projects(input_projects_analysis + "\\" + project_name + "\\releases")
+
+
+def get_release_directory_list(project_path, output_path):
+    # order releases by date
+    list_of_releases = get_all_directory_projects(output_path)
+    release_list = {}
+    for release in list_of_releases:
+        release_list[release.split("___")[1]] = ""
+
+    for commit_hash in release_list:
+        # get date of release with pydriller
+        release_list[commit_hash] = get_date_of_release(project_path, commit_hash)
+    # sort releases by date
+    release_list = {k: v for k, v in sorted(release_list.items(), key=lambda item: item[1])}
+    return release_list
+
+
+def get_date_of_release(project_path, hash):
+    repo = Repository(project_path, single=hash)
+    for commit in repo.traverse_commits():
+        if commit.hash == hash:
+            return commit.committer_date
+
+
+def sort_releases(base_path, output_path, list_releases):
+    order = get_release_directory_list(base_path, output_path)
+    sorted_list = []
+    for key in order:
+        for release in list_releases:
+            if key == release.split("___")[1]:
+                sorted_list.append(release)
+    return sorted_list
+
+
+def verify_project(input_projects_analysis, project_name, base_dir):
+    list_releases = get_all_directory_projects(input_projects_analysis + "/" + project_name + "/releases")
+    list_releases = sort_releases(base_dir + "/" + project_name,
+                                  input_projects_analysis + "/" + project_name + "/releases", list_releases)
     for j in range(len(list_releases) - 1):
         df_i = pd.read_csv(
-            input_projects_analysis + "\\" + project_name + "\\releases\\" + list_releases[j] + "\\to_save.csv")
+            input_projects_analysis + "/" + project_name + "/releases/" + list_releases[j] + "/to_save.csv")
         df_j = pd.read_csv(
-            input_projects_analysis + "\\" + project_name + "\\releases\\" + list_releases[j + 1] + "\\to_save.csv")
+            input_projects_analysis + "/" + project_name + "/releases/" + list_releases[j + 1] + "/to_save.csv")
         if estimate_smelliness_between_two_stable_versions(df_i, df_j) != "stable":
             print("Project: " + project_name + " Release: " + list_releases[j] + " and " + list_releases[
                 j + 1] + " are different")
-            analyze_commit_by_commit(input_projects_analysis + "\\" + project_name + "\\releases", list_releases[j],
+            analyze_commit_by_commit(input_projects_analysis + "/" + project_name + "/releases", list_releases[j],
                                      list_releases[j + 1], project_name, base_dir)
 
 
 if __name__ == '__main__':
-    base_dir = "D:\\ai_code_smells\\machine_learning_projects\\a_test\\"
-    output_dir ="C:\\Users\\pc\\Desktop\\wrapper_code_smile\\code_smile\\output\\projects_analysis"
+    base_dir = "code_smile/input/projects/"
+    output_dir = "output/projects_analysis"
     list_dir = get_all_directory_projects(base_dir)
-    print(list_dir)
     for dir in list_dir:
-        try:
-            start_analysis(base_dir + dir, dir,output_dir)
-        except:
-            logging.basicConfig(filename='log/log.txt', level=logging.DEBUG,
-                            format='%(asctime)s %(levelname)s %(message)s')
-            logging.error("project: " + dir + "skipped")
-
-
-
+        verify_project(output_dir, dir, base_dir)

@@ -2,6 +2,51 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects/cgre-aachen$gempy" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects/cgre-aachen$gempy/gempy" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects/cgre-aachen$gempy___2847f0daf52c411cf7a6d113f03a8b60cda44f1c" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects/cgre-aachen$gempy___2847f0daf52c411cf7a6d113f03a8b60cda44f1c___2847f0daf52c411cf7a6d113f03a8b60cda44f1c" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects/cgre-aachen$gempy___2847f0daf52c411cf7a6d113f03a8b60cda44f1c___2847f0daf52c411cf7a6d113f03a8b60cda44f1c___2847f0daf52c411cf7a6d113f03a8b60cda44f1c" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects/cgre-aachen$gempy___59582d14888c59421095a9fbed5c92c6a507b819" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects/cgre-aachen$gempy___59582d14888c59421095a9fbed5c92c6a507b819/gempy" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects/cgre-aachen$gempy___f4f654da27f0d7b243387fcc79c3829f8e3af7a3" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects/cgre-aachen$gempy___f4f654da27f0d7b243387fcc79c3829f8e3af7a3/gempy" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/MIC-DKFZnnUNet" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/MIPT-Oulusolt" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/MITKMITK" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/MarcSkovMadsenawesome-streamlit" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/MarkUsProjectMarkus" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/MaybeShewill-CVCRNN_Tensorflow" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/MaybeShewill-CVlanenet-lane-detection" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/MegviiDetectionvideo_analyst" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/Mini-ConfMini-Conf" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/MisaOguraflashtorch" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/MrGiovanniModelsGenesis" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/MycroftAImycroft-precise" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/NLeSCmcfly" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/NVIDIADeepLearningExamples" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/NVIDIAGameWorkskaolin" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/NVIDIAMegatron-LM" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/NVIDIANeMo" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/NVIDIATRTorch" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/NervanaSystemsdistiller" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/NervanaSystemsnlp-architect" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/OpenMinedPySyft" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/OpenNMTOpenNMT-py" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/OpenNMTOpenNMT-tf" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/PaddlePaddlePARL" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/PaddlePaddlemodels" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/PetrochukMPyTorch-NLP" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/PreferredAIcornac" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/Project-MONAIMONAI" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/lukemelasEfficientNet-PyTorch" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/machine-learning-appsIssue-Label-Bot" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/magentaddsp" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/magentamagenta" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/mapboxrobosat" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/masa-supixyz" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/medipixelrl_algorithms" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/code_smile/input/projects_history_analysis/microsoftAdaptiveCards" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/pytorch-widedeepinternal_commit___2fe4b49afd1b0a0565eee1479dcc1acd0c0d3a14___between_commitsa71699d6cdf820c73f053e2d86b0fc214e9847bf___2fe4b49afd1b0a0565eee1479dcc1acd0c0d3a14" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/sonnetinternal_commit___f8552f4b403b35581ef5eb64fa50def4772c7d2e___between_commits940b4d1117160668f10933a3d17a492a49a517ac___f0ac4cb408118845df71ff0feca19964cc9223d5" vcs="Git" />
   </component>

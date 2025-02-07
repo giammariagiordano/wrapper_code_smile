@@ -3,7 +3,7 @@ import re
 from ..code_extractor.models import check_model_method
 from ..code_extractor.libraries import get_library_of_node, extract_library_name, extract_library_as_name
 
-from ..code_extractor.dataframe_detector import dataframe_check
+from ..code_extractor.dataframe_detector import dataframe_check,dataframe_check_at_line
 from ..code_extractor.variables import search_variable_definition
 
 test_libraries = ["pytest", "robot", "unittest", "doctest", "nose2", "testify", "pytest-cov", "pytest-xdist"]
@@ -223,44 +223,63 @@ def nan_equivalence_comparison_misused(libraries, filename, fun_node):
             return to_return, smell_instance_list
         return [], []
     return [], []
-
-
 def in_place_apis_misused(libraries, filename, fun_node, df_dict):
+    """
+    Detects misuse of in-place APIs for pandas DataFrames in the given function node.
+    """
     function_name = ''
-    if [x for x in libraries if 'pandas' in x]:
-        function_name = fun_node.name
-    if function_name == '':
+    if any('pandas' in lib for lib in libraries):
+        function_name = getattr(fun_node, 'name', '')
+    if not function_name:
         return [], []
+
     smell_instance_list = []
     in_place_apis = 0
-    for node in ast.iter_child_nodes(fun_node):
-        in_place_flag = False
-        if isinstance(node, ast.Expr):
-            if isinstance(node.value, ast.Call):
-                if isinstance(node.value.func, ast.Attribute):
-                    if hasattr(node.value, 'keywords'):
-                        for keyword in node.value.keywords:
-                            if keyword.arg == 'inplace':
-                                if hasattr(keyword.value, 'value'):
-                                    if keyword.value.value == True:
-                                        in_place_flag = True
-                    if not in_place_flag:
-                        df = df_dict[df_dict['return_type'] == 'DataFrame']
-                        if node.value.func.attr in df['method'].values:
-                            new_smell = {'filename': filename, 'function_name': function_name,
-                                            'smell_name': 'in_place_apis_misused',
-                                            'line': node.lineno}
-                            smell_instance_list.append(new_smell)
-                            in_place_apis += 1
+
+    # Walk through the function node's AST
+    for node in ast.walk(fun_node):
+        if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call):
+            call_node = node.value
+
+            # Ensure the call is a method call
+            if isinstance(call_node.func, ast.Attribute):
+                # Check for 'inplace' keyword in the call
+                in_place_flag = any(
+                    getattr(keyword, 'arg', '') == 'inplace' and
+                    getattr(getattr(keyword, 'value', None), 'value', False) is True
+                    for keyword in getattr(call_node, 'keywords', [])
+                )
+
+                if not in_place_flag:
+                    # Check if the method belongs to pandas' in-place methods
+                    if call_node.func.attr in df_dict[df_dict['return_type'] == 'DataFrame']['method'].tolist():
+                        if hasattr(call_node.func.value, 'id'):
+                            var_name = call_node.func.value.id
+                            # Use dataframe_check_at_line to determine if the variable is a DataFrame
+                            variables = dataframe_check_at_line(fun_node, libraries, df_dict, node.lineno)
+                            if var_name in variables:
+                                # Register a smell instance
+                                smell_instance_list.append({
+                                    'filename': filename,
+                                    'function_name': function_name,
+                                    'smell_name': 'in_place_apis_misused',
+                                    'line': node.lineno
+                                })
+                                in_place_apis += 1
 
     if in_place_apis > 0:
-        message = "We suggest developers check whether the result of the operation is assigned to a variable or the" \
-                  " in-place parameter is set in the API. Some developers hold the view that the in-place operation" \
-                  " will save memory"
+        message = (
+            "We suggest developers check whether the result of the operation is assigned to a variable or the "
+            "in-place parameter is set in the API. Some developers hold the view that the in-place operation "
+            "will save memory."
+        )
         name_smell = "in_place_apis_misused"
         to_return = [filename, function_name, in_place_apis, name_smell, message]
         return to_return, smell_instance_list
+
     return [], []
+
+
 
 
 def memory_not_freed(libraries, filename, fun_node, model_dict):

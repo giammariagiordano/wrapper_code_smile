@@ -5,7 +5,7 @@ import time
 from code_smile.components import detector
 import argparse
 
-def merge_results(input_dir="..\\output", output_dir="..\\general_output"):
+def merge_results(input_dir="../output", output_dir="../general_output"):
     dataframes = []
     for subdir, dirs, files in os.walk(input_dir):
         if "to_save.csv" in files:
@@ -68,7 +68,7 @@ def analyze_project(project_path, output_path="."):
     filenames = get_python_files(project_path)
 
     for filename in filenames:
-        if "tests\\" not in filename:  # ignore test files
+        if "tests/" not in filename:  # ignore test files
             try:
                 result = detector.inspect(filename, output_path)
                 to_save = to_save.merge(result, how='outer')
@@ -89,24 +89,24 @@ def analyze_project(project_path, output_path="."):
                     error_file.write(str(message))
                 continue
 
-    to_save.to_csv(output_path + "\\to_save.csv", index=False, mode='a')
+    to_save.to_csv(output_path + "/to_save.csv", index=False, mode='a')
 
 
-def projects_analysis(base_path='..\\input/projects', output_path='..\\output/projects_analysis',resume=False):
+def projects_analysis(base_path='../input/projects', output_path='../output/projects_analysis',resume=False):
     start = time.time()
     if not os.path.exists(output_path):
         os.makedirs(output_path)
     dirpath = os.listdir(base_path)
-    if not os.path.exists("..\\config\\execution_log.txt"):
+    if not os.path.exists("../config/execution_log.txt"):
         #get abs path of execution_log.txt
-        execution_log_path = os.path.abspath("..\\config/execution_log.txt")
+        execution_log_path = os.path.abspath("../config/execution_log.txt")
         print("Path:"+execution_log_path)
-        open("..\\config/execution_log.txt", "w").close()
+        open("../config/execution_log.txt", "w").close()
         resume = False
-    execution_log = open("..\\config/execution_log.txt", "a")
+    execution_log = open("../config/execution_log.txt", "a")
     #get last project analyzed in execution_log.txt
     if resume:
-        with open("..\\config/execution_log.txt", "r") as f:
+        with open("../config/execution_log.txt", "r") as f:
             last_project = f.readlines()[-1]
     for dirname in dirpath:
         if resume:
@@ -124,7 +124,7 @@ def projects_analysis(base_path='..\\input/projects', output_path='..\\output/pr
     print(f"Sequential Exec Time completed in: {end - start}")
 
 
-def parallel_projects_analysis(base_path='..\\input/projects', output_path='..\\output/projects_analysis', max_workers=5,resume=False):
+def parallel_projects_analysis(base_path='../input/projects', output_path='../output/projects_analysis', max_workers=5,resume=False):
     start = time.time()
     if not os.path.exists(output_path):
         os.makedirs(output_path)
@@ -139,11 +139,11 @@ def parallel_projects_analysis(base_path='..\\input/projects', output_path='..\\
     print(f"Parallel Exec Time completed in: {end - start}")
 
 
-def clean(output_path="..\\output\\projects_analysis"):
+def clean(output_path="../output/projects_analysis"):
     # check os windows or linux
 
     if os.name == "nt":
-        clean_win_path = output_path.replace("/", "\\")
+        clean_win_path = output_path.replace("/", "/")
         if os.path.exists(clean_win_path):
             os.system(f"rmdir /s /q {clean_win_path}")
 
@@ -161,12 +161,19 @@ def main(args):
         print("Please specify input and output folders")
         exit(0)
     resume = True
+    # print absolute path of output folder
+    output_path = os.path.abspath(args.output)
 
+    # print absolute path of input folder
+    input_path = os.path.abspath(args.input)
+    print(f"Input path: {input_path}\nOutput path: {output_path}")
     multiple = args.multiple
     if multiple:
         if not args.resume:
             resume = False
             clean(args.output)
+
+
         if args.parallel:
             parallel_projects_analysis(args.input, args.output, args.max_workers,resume)
         else:

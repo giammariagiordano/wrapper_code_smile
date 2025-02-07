@@ -17,13 +17,16 @@ def Chain_Indexing(libraries, filename, fun_node,df_dict):
         function_name = fun_node.name
         variables = dataframe_check(fun_node, libraries,df_dict)
         function_body = ast.unparse(fun_node.body).strip()
-        pattern = r'([a-zA-Z]+[a-zA-Z_0-9]*)(\[[a-zA-Z0-9\']*\]){2,}'
+        pattern = r'([a-zA-Z]+[a-zA-Z0-9]*)(\[[a-zA-Z0-9\']*\]){2,}'
         matches = re.findall(pattern, function_body)
         message = "Using chain indexing may cause performance issues."
         num_matches = 0
         for node in ast.walk(fun_node):
             if isinstance(node, ast.Subscript):
                 if hasattr(node, 'value') and isinstance(node.value, ast.Subscript):
+                    #iteratively get the value inside the Subscript to get the variable name
+                    while isinstance(node.value, ast.Subscript):
+                        node = node.value
                     if hasattr(node.value, 'id'):
                         if node.value.id in variables:
                             new_smell = {'filename': filename, 'function_name': function_name,
